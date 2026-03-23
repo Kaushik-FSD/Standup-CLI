@@ -1,0 +1,41 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  apiKey    String   @unique
+  timezone  String   @default("UTC")
+  createdAt DateTime @default(now())
+
+  logs      LogEntry[]
+  summaries GeneratedSummary[]
+}
+
+model LogEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  content   String
+  logDate   DateTime
+  isBlocker Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model GeneratedSummary {
+  id          String   @id @default(uuid())
+  userId      String
+  summary     String
+  type        String
+  summaryDate DateTime
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+}
