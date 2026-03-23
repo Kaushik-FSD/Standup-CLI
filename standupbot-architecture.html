@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StandupBot — Architecture</title>
+<title>Standup-CLI — Architecture</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
@@ -642,33 +642,16 @@
 <!-- HEADER -->
 <div class="header">
   <span class="project-tag">Portfolio Project 03</span>
-  <h1>Standup<span>Bot</span></h1>
+  <h1>Standup<span>-CLI</span></h1>
   <p class="subtitle">CLI developer tool with AI-generated standups. Architecture reference & build guide.</p>
 </div>
-
-<!-- NAV -->
-<nav class="nav">
-  <button class="nav-item active" onclick="scrollTo('overview')">Overview</button>
-  <button class="nav-item" onclick="scrollTo('arch')">Architecture</button>
-  <button class="nav-item" onclick="scrollTo('cli')">CLI Commands</button>
-  <button class="nav-item" onclick="scrollTo('modules')">API Modules</button>
-  <button class="nav-item" onclick="scrollTo('data')">Data Models</button>
-  <button class="nav-item" onclick="scrollTo('flow')">Request Flow</button>
-  <button class="nav-item" onclick="scrollTo('ai')">AI Layer</button>
-  <button class="nav-item" onclick="scrollTo('stack')">Tech Stack</button>
-  <button class="nav-item" onclick="scrollTo('folder')">Folder Structure</button>
-  <button class="nav-item" onclick="scrollTo('env')">Env Config</button>
-  <button class="nav-item" onclick="scrollTo('objectives')">Objectives</button>
-  <button class="nav-item" onclick="scrollTo('phases')">Build Phases</button>
-
-</nav>
 
 <div class="main">
 
 <!-- ───────────────────────── OVERVIEW ───────────────────────── -->
 <section class="section" id="overview">
   <div class="section-label">01 / overview</div>
-  <div class="section-title">What is StandupBot?</div>
+  <div class="section-title">What is Standup-CLI?</div>
   <div class="section-desc">
     A personal developer productivity CLI. Log what you work on during the day in one command.
     Before standup, generate a clean AI-formatted summary in two seconds. End of week, get a full progress report.
@@ -728,7 +711,7 @@
       </div>
       <div class="arch-node highlight-green" style="flex:1">
         <div class="arch-node-label">Local Config</div>
-        <div class="arch-node-title">~/.standupbot/config.json</div>
+        <div class="arch-node-title">~/.standup-cli/config.json</div>
         <div class="arch-node-desc">Stores user name, timezone, API server port, AI provider preference.</div>
       </div>
     </div>
@@ -824,7 +807,7 @@
       <tr>
         <td><span class="cmd">standup config</span></td>
         <td><span class="cmd-flag">--set key=value</span></td>
-        <td class="cmd-desc">Reads or sets local config values: name, timezone, port, ai_provider. Stored in ~/.standupbot/config.json.</td>
+        <td class="cmd-desc">Reads or sets local config values: name, timezone, port, ai_provider. Stored in ~/.standup-cli/config.json.</td>
       </tr>
       <tr>
         <td><span class="cmd">standup init</span></td>
@@ -1203,7 +1186,7 @@ Rules:
   </div>
 
   <div class="folder-tree">
-    <div class="root">standupbot/</div>
+    <div class="root">Standup-CLI/</div>
     <div style="padding-left: 16px;">
       <div><span class="dir">packages/</span></div>
       <div style="padding-left: 16px;">
@@ -1223,7 +1206,7 @@ Rules:
             </div>
             <div><span class="dir">lib/</span></div>
             <div style="padding-left: 16px;">
-              <div><span class="file">config.ts</span> <span class="comment">── read/write ~/.standupbot/config.json</span></div>
+              <div><span class="file">config.ts</span> <span class="comment">── read/write ~/.standup-cli/config.json</span></div>
               <div><span class="file">client.ts</span> <span class="comment">── HTTP client (axios/fetch) to Fastify</span></div>
               <div><span class="file">printer.ts</span> <span class="comment">── terminal output formatting</span></div>
             </div>
@@ -1281,7 +1264,7 @@ Rules:
   <div class="section-label">10 / env config</div>
   <div class="section-title">Environment Variables</div>
   <div class="section-desc">
-    Server-side env vars only. The CLI reads from <code>~/.standupbot/config.json</code>, not <code>.env</code>.
+    Server-side env vars only. The CLI reads from <code>~/.standup-cli/config.json</code>, not <code>.env</code>.
   </div>
 
   <table class="env-table">
@@ -1295,7 +1278,7 @@ Rules:
     <tbody>
       <tr>
         <td class="env-key">DATABASE_URL</td>
-        <td class="env-example">postgresql://user:pass@localhost:5432/standupbot</td>
+        <td class="env-example">postgresql://user:pass@localhost:5432/standup-cli</td>
         <td class="env-desc">Prisma database connection string. Points to Docker Postgres.</td>
       </tr>
       <tr>
