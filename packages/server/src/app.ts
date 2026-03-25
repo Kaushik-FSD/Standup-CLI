@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import { FastifyError } from "fastify";
 import { prisma } from "./lib/prisma.js";
 import { redis } from "./lib/redis.js";
 import authPlugin from "./plugins/auth.js";
@@ -35,6 +36,19 @@ export function buildApp() {
     await redis.quit();
     app.log.info("[Prisma] Disconnected");
     app.log.info("[Redis] Disconnected");
+  });
+
+  // Global error handler
+  app.setErrorHandler((error: FastifyError, request, reply) => {
+    app.log.error({ err: error, url: request.url }, "Unhandled error");
+
+    // Known HTTP errors (4xx) — send as-is
+    if (error.statusCode && error.statusCode < 500) {
+      return reply.status(error.statusCode).send({ error: error.message });
+    }
+
+    // Unknown/server errors (5xx) — don't leak internals
+    return reply.status(500).send({ error: "Internal server error" });
   });
 
   app.register(authPlugin);
