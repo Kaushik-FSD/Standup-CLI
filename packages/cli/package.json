@@ -1,0 +1,26 @@
+{
+  "name": "standup-cli",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "CLI tool for AI-generated standups",
+  "bin": {
+    "standup": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "axios": "^1.13.6",
+    "commander": "^14.0.3"
+  }
+}

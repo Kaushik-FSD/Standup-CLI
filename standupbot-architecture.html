@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Standup-CLI — Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0d0d0d;
+    --bg2: #141414;
+    --bg3: #1a1a1a;
+    --bg4: #202020;
+    --border: #2a2a2a;
+    --border2: #333;
+    --text: #e8e6e0;
+    --muted: #888;
+    --dim: #555;
+    --accent: #7fff6e;
+    --accent2: #4fc3f7;
+    --accent3: #ffb74d;
+    --accent4: #cf6679;
+    --accent5: #b39ddb;
+    --font: 'IBM Plex Sans', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    padding: 48px 48px 0;
+    margin-bottom: 8px;
+  }
+  .project-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .header h1 {
+    font-size: clamp(42px, 7vw, 72px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+    margin-bottom: 16px;
+  }
+  .header h1 span { color: var(--accent); }
+  .header .subtitle {
+    color: var(--muted);
+    font-size: 16px;
+    font-weight: 400;
+    max-width: 500px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+
+  /* ─── NAV PILLS ─── */
+  .nav {
+    display: flex;
+    gap: 2px;
+    padding: 16px 48px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .nav-item {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.15s;
+    white-space: nowrap;
+    border: none;
+    background: none;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--bg3); color: var(--accent); border: 1px solid var(--border2); }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main { padding: 0 48px 80px; }
+  .section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  .section:last-child { border-bottom: none; }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .section-desc {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 28px;
+    max-width: 640px;
+    line-height: 1.7;
+  }
+
+  /* ─── OVERVIEW GRID ─── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .overview-card {
+    background: var(--bg2);
+    padding: 24px;
+  }
+  .overview-card .oc-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .overview-card .oc-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .overview-card .oc-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ─── ARCH DIAGRAM ─── */
+  .arch-diagram {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+  .arch-row {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .arch-row:last-child { margin-bottom: 0; }
+  .arch-node {
+    flex: 1;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 16px 18px;
+    background: var(--bg3);
+    position: relative;
+  }
+  .arch-node.highlight-green { border-color: var(--accent); }
+  .arch-node.highlight-blue  { border-color: var(--accent2); }
+  .arch-node.highlight-amber { border-color: var(--accent3); }
+  .arch-node.highlight-red   { border-color: var(--accent4); }
+  .arch-node.highlight-purple{ border-color: var(--accent5); }
+  .arch-node-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .arch-node-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .arch-node-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .arch-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dim);
+    font-size: 18px;
+    min-width: 24px;
+  }
+  .arch-arrow-down {
+    text-align: center;
+    color: var(--dim);
+    font-size: 16px;
+    margin: 4px 0;
+    padding-left: 24px;
+  }
+  .arch-group-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding-left: 2px;
+  }
+
+  /* ─── CLI COMMANDS ─── */
+  .cmd-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .cmd-table thead { background: var(--bg3); }
+  .cmd-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    text-transform: uppercase;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmd-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .cmd-table tr:last-child td { border-bottom: none; }
+  .cmd-table tr { background: var(--bg2); }
+  .cmd-table tr:hover { background: var(--bg3); }
+  .cmd { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .cmd-flag { font-family: var(--mono); font-size: 11px; color: var(--accent3); }
+  .cmd-desc { font-size: 12px; color: var(--muted); }
+
+  /* ─── MODULES ─── */
+  .modules-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .module-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px;
+  }
+  .module-card .mc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .module-card .mc-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .mc-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .badge-core    { background: rgba(127,255,110,0.1); color: var(--accent); border: 1px solid rgba(127,255,110,0.2); }
+  .badge-infra   { background: rgba(79,195,247,0.1);  color: var(--accent2); border: 1px solid rgba(79,195,247,0.2); }
+  .badge-ai      { background: rgba(207,102,121,0.12); color: var(--accent4); border: 1px solid rgba(207,102,121,0.2); }
+
+  .mc-endpoints {
+    list-style: none;
+    margin-bottom: 14px;
+  }
+  .mc-endpoints li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .mc-endpoints li:last-child { border-bottom: none; }
+  .http-method {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 5px;
+    border-radius: 3px;
+    min-width: 38px;
+    text-align: center;
+  }
+  .m-post   { background: rgba(127,255,110,0.15); color: var(--accent); }
+  .m-get    { background: rgba(79,195,247,0.15);  color: var(--accent2); }
+  .m-delete { background: rgba(207,102,121,0.15); color: var(--accent4); }
+  .endpoint-path { color: var(--muted); }
+  .mc-deps {
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .mc-deps span { color: var(--muted); }
+
+  /* ─── DATA MODELS ─── */
+  .schema-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .schema-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .schema-header {
+    background: var(--bg3);
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .schema-pk { font-size: 9px; color: var(--accent3); }
+  .schema-fields { padding: 4px 0; }
+  .schema-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .schema-field:last-child { border-bottom: none; }
+  .field-name { color: var(--text); }
+  .field-name.pk { color: var(--accent3); }
+  .field-name.fk { color: var(--accent2); }
+  .field-type { color: var(--dim); font-size: 10px; }
+  .field-flag { font-size: 9px; color: var(--accent4); margin-left: 4px; }
+
+  /* ─── STACK ─── */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stack-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 16px;
+  }
+  .stack-layer {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stack-tech {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .stack-why {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ─── FLOW ─── */
+  .flow-container {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    margin-bottom: 32px;
+  }
+  .flow-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+  .flow-step {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .step-box {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 10px 14px;
+    min-width: 120px;
+    text-align: center;
+  }
+  .step-box .step-num {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--dim);
+    margin-bottom: 4px;
+  }
+  .step-box .step-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .step-box .step-sub {
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .step-box.cli-step { border-color: var(--accent); }
+  .step-box.api-step { border-color: var(--accent2); }
+  .step-box.db-step  { border-color: var(--accent3); }
+  .step-box.ai-step  { border-color: var(--accent4); }
+  .step-box.out-step { border-color: var(--accent5); }
+  .flow-arrow {
+    color: var(--dim);
+    font-size: 14px;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  /* ─── ENV VARS ─── */
+  .env-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .env-table thead { background: var(--bg3); }
+  .env-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    text-transform: uppercase;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .env-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    vertical-align: top;
+  }
+  .env-table tr:last-child td { border-bottom: none; }
+  .env-table tr { background: var(--bg2); }
+  .env-key { color: var(--accent2); }
+  .env-example { color: var(--dim); }
+  .env-desc { color: var(--muted); font-family: var(--font); font-size: 12px; }
+
+  /* ─── FOLDER STRUCTURE ─── */
+  .folder-tree {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 2;
+    margin-bottom: 32px;
+  }
+  .folder-tree .dir  { color: var(--accent2); }
+  .folder-tree .file { color: var(--muted); }
+  .folder-tree .comment { color: var(--dim); font-size: 11px; }
+  .folder-tree .root { color: var(--text); font-weight: 500; }
+
+  /* ─── OBJECTIVES ─── */
+  .objectives-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .obj-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .obj-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .obj-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .obj-list {
+    list-style: none;
+  }
+  .obj-list li {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .obj-list li:last-child { border-bottom: none; }
+  .obj-list li::before {
+    content: '–';
+    color: var(--dim);
+    flex-shrink: 0;
+  }
+
+  /* ─── TIMELINE ─── */
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .timeline-phase {
+    background: var(--bg2);
+    padding: 20px;
+  }
+  .phase-num {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--border2);
+    margin-bottom: 4px;
+  }
+  .phase-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .phase-items {
+    list-style: none;
+  }
+  .phase-items li {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-items li:last-child { border-bottom: none; }
+
+  /* ─── UTILS ─── */
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--bg3);
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    margin-right: 4px;
+    margin-bottom: 2px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0 20px;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--bg3);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* scroll behavior */
+  html { scroll-behavior: smooth; }
+
+  section[id] { scroll-margin-top: 60px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <span class="project-tag">Portfolio Project 03</span>
+  <h1>Standup<span>-CLI</span></h1>
+  <p class="subtitle">CLI developer tool with AI-generated standups. Architecture reference & build guide.</p>
+</div>
+
+<div class="main">
+
+<!-- ───────────────────────── OVERVIEW ───────────────────────── -->
+<section class="section" id="overview">
+  <div class="section-label">01 / overview</div>
+  <div class="section-title">What is Standup-CLI?</div>
+  <div class="section-desc">
+    A personal developer productivity CLI. Log what you work on during the day in one command.
+    Before standup, generate a clean AI-formatted summary in two seconds. End of week, get a full progress report.
+  </div>
+
+  <div class="overview-grid">
+    <div class="overview-card">
+      <div class="oc-label">Core Problem</div>
+      <div class="oc-value">Standup amnesia</div>
+      <div class="oc-desc">Developers forget what they actually worked on. Brain goes blank. Logging takes 5 seconds and AI does the formatting.</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">Core Loop</div>
+      <div class="oc-value">Log → Generate</div>
+      <div class="oc-desc">Log entries during the day. Run generate before standup. Clean formatted output printed straight to your terminal.</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">Portfolio Signal</div>
+      <div class="oc-value">CLI + Backend + AI</div>
+      <div class="oc-desc">Rare combination. Most portfolio projects are web UIs. A polished CLI tool signals developer-tooling thinking.</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">AI Provider</div>
+      <div class="oc-value">Gemini 2.0 Flash</div>
+      <div class="oc-desc">Free tier for development. Provider-agnostic abstraction layer — swap to Claude for production demo.</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">Scope</div>
+      <div class="oc-value">3 core features</div>
+      <div class="oc-desc">Log, Generate, Weekly summary. Plus Config and Init. Tightly scoped to finish in 3–4 weeks.</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">Architecture Style</div>
+      <div class="oc-value">CLI → HTTP → Fastify</div>
+      <div class="oc-desc">Commander.js CLI calls a local Fastify server. Clean separation — CLI is just the interface, backend does all the work.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── ARCHITECTURE ───────────────────────── -->
+<section class="section" id="arch">
+  <div class="section-label">02 / architecture</div>
+  <div class="section-title">System Architecture</div>
+  <div class="section-desc">
+    Three distinct layers. The CLI is a thin Commander.js interface. The Fastify backend is the brain — it handles auth, storage, and AI calls.
+    Infrastructure is Docker-managed PostgreSQL and Redis.
+  </div>
+
+  <div class="arch-diagram">
+
+    <div class="arch-group-label">Layer 1 — CLI Interface</div>
+    <div class="arch-row">
+      <div class="arch-node highlight-green" style="flex:2">
+        <div class="arch-node-label">CLI (Commander.js)</div>
+        <div class="arch-node-title">standup &lt;command&gt; [args] [flags]</div>
+        <div class="arch-node-desc">Thin terminal interface. Parses commands, reads local config, sends HTTP requests to the local Fastify server. No business logic here.</div>
+      </div>
+      <div class="arch-node highlight-green" style="flex:1">
+        <div class="arch-node-label">Local Config</div>
+        <div class="arch-node-title">~/.standup-cli/config.json</div>
+        <div class="arch-node-desc">Stores user name, timezone, API server port, AI provider preference.</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow-down">↓</div>
+
+    <div class="arch-group-label">Layer 2 — Fastify Backend (localhost)</div>
+    <div class="arch-row">
+      <div class="arch-node highlight-blue">
+        <div class="arch-node-label">Auth Module</div>
+        <div class="arch-node-title">/api/auth</div>
+        <div class="arch-node-desc">API key based. User has a local API key stored in config. Every CLI request passes it as a header.</div>
+      </div>
+      <div class="arch-node highlight-blue">
+        <div class="arch-node-label">Logs Module</div>
+        <div class="arch-node-title">/api/logs</div>
+        <div class="arch-node-desc">POST new log entry. GET logs for date range. DELETE individual entry. Core CRUD module.</div>
+      </div>
+      <div class="arch-node highlight-blue">
+        <div class="arch-node-label">Generate Module</div>
+        <div class="arch-node-title">/api/generate</div>
+        <div class="arch-node-desc">Fetches recent logs, calls AI provider, returns formatted standup or weekly summary.</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow-down">↓</div>
+
+    <div class="arch-group-label">Layer 3 — Infrastructure (Docker)</div>
+    <div class="arch-row">
+      <div class="arch-node highlight-amber">
+        <div class="arch-node-label">PostgreSQL</div>
+        <div class="arch-node-title">Persistent Log Storage</div>
+        <div class="arch-node-desc">Stores all log entries with timestamps. Users table for API key auth. The permanent record — never wiped.</div>
+      </div>
+      <div class="arch-node highlight-amber">
+        <div class="arch-node-label">Redis</div>
+        <div class="arch-node-title">Cache + Rate Limiting</div>
+        <div class="arch-node-desc">Caches today's logs for fast generate calls. Also handles generate rate limiting to avoid expensive AI calls on hammering.</div>
+      </div>
+      <div class="arch-node highlight-red">
+        <div class="arch-node-label">AI Provider</div>
+        <div class="arch-node-title">Gemini 2.0 Flash (dev)</div>
+        <div class="arch-node-desc">External API call. Abstracted behind AIProvider interface — can swap to Claude Sonnet for production without changing business logic.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ───────────────────────── CLI ───────────────────────── -->
+<section class="section" id="cli">
+  <div class="section-label">03 / cli commands</div>
+  <div class="section-title">CLI Interface</div>
+  <div class="section-desc">
+    Built with Commander.js. Every command sends an HTTP request to the local Fastify server running on a configured port.
+    The CLI is installable globally via <code>npm install -g</code>.
+  </div>
+
+  <table class="cmd-table">
+    <thead>
+      <tr>
+        <th style="width:30%">Command</th>
+        <th style="width:15%">Flags</th>
+        <th style="width:55%">Behaviour</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="cmd">standup log "&lt;entry&gt;"</span></td>
+        <td>—</td>
+        <td class="cmd-desc">POST /api/logs. Saves entry with current timestamp, date, and user ID. Takes 5 seconds. Core daily loop.</td>
+      </tr>
+      <tr>
+        <td><span class="cmd">standup generate</span></td>
+        <td>—</td>
+        <td class="cmd-desc">GET /api/generate. Fetches logs for today + yesterday, sends to AI, returns formatted standup printed to terminal.</td>
+      </tr>
+      <tr>
+        <td><span class="cmd">standup weekly</span></td>
+        <td>—</td>
+        <td class="cmd-desc">GET /api/generate/weekly. Fetches full week's logs (Mon–today), AI generates a progress summary. Used for weekly syncs.</td>
+      </tr>
+      <tr>
+        <td><span class="cmd">standup history</span></td>
+        <td><span class="cmd-flag">--days N</span></td>
+        <td class="cmd-desc">GET /api/logs?days=N. Prints raw log entries for the past N days (default 7). No AI involved — raw record.</td>
+      </tr>
+      <tr>
+        <td><span class="cmd">standup delete &lt;id&gt;</span></td>
+        <td>—</td>
+        <td class="cmd-desc">DELETE /api/logs/:id. Removes a specific log entry by ID. IDs shown in standup history output.</td>
+      </tr>
+      <tr>
+        <td><span class="cmd">standup config</span></td>
+        <td><span class="cmd-flag">--set key=value</span></td>
+        <td class="cmd-desc">Reads or sets local config values: name, timezone, port, ai_provider. Stored in ~/.standup-cli/config.json.</td>
+      </tr>
+      <tr>
+        <td><span class="cmd">standup init</span></td>
+        <td>—</td>
+        <td class="cmd-desc">First-time setup wizard. Prompts for name and timezone. Generates local API key. Starts Fastify server.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ───────────────────────── MODULES ───────────────────────── -->
+<section class="section" id="modules">
+  <div class="section-label">04 / api modules</div>
+  <div class="section-title">Fastify Backend Modules</div>
+  <div class="section-desc">
+    Three route modules registered as Fastify plugins. Each module owns its routes, schema validation (Zod), and service layer.
+    Prisma handles all database access.
+  </div>
+
+  <div class="modules-grid">
+
+    <div class="module-card">
+      <div class="mc-header">
+        <span class="mc-name">auth</span>
+        <span class="mc-badge badge-core">Core</span>
+      </div>
+      <ul class="mc-endpoints">
+        <li><span class="http-method m-post">POST</span><span class="endpoint-path">/api/auth/init</span></li>
+        <li><span class="http-method m-get">GET</span><span class="endpoint-path">/api/auth/verify</span></li>
+      </ul>
+      <div class="mc-deps">
+        Deps: <span>PostgreSQL (users table), API key generation</span><br>
+        Notes: API key stored in local config. Passed as <code>x-api-key</code> header on every request. init creates user + key on first setup.
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-header">
+        <span class="mc-name">logs</span>
+        <span class="mc-badge badge-core">Core</span>
+      </div>
+      <ul class="mc-endpoints">
+        <li><span class="http-method m-post">POST</span><span class="endpoint-path">/api/logs</span></li>
+        <li><span class="http-method m-get">GET</span><span class="endpoint-path">/api/logs?date=&amp;days=</span></li>
+        <li><span class="http-method m-delete">DEL</span><span class="endpoint-path">/api/logs/:id</span></li>
+      </ul>
+      <div class="mc-deps">
+        Deps: <span>PostgreSQL (logs table), Redis (today's log cache)</span><br>
+        Notes: POST invalidates Redis cache. GET checks Redis first, falls back to DB. Returns entries ordered by created_at.
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="mc-header">
+        <span class="mc-name">generate</span>
+        <span class="mc-badge badge-ai">AI</span>
+      </div>
+      <ul class="mc-endpoints">
+        <li><span class="http-method m-get">GET</span><span class="endpoint-path">/api/generate</span></li>
+        <li><span class="http-method m-get">GET</span><span class="endpoint-path">/api/generate/weekly</span></li>
+      </ul>
+      <div class="mc-deps">
+        Deps: <span>PostgreSQL, Redis (rate limit), AI Provider service</span><br>
+        Notes: Rate limited to 10 calls/hour via Redis. Fetches logs, builds prompt, calls AI, returns formatted string. Cached for 5min per date.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ───────────────────────── DATA MODELS ───────────────────────── -->
+<section class="section" id="data">
+  <div class="section-label">05 / data models</div>
+  <div class="section-title">PostgreSQL Schema (Prisma)</div>
+  <div class="section-desc">
+    Three tables. Simple and flat — no complex relations. Users and Logs are the core. Generated summaries are optionally cached in DB for history.
+  </div>
+
+  <div class="schema-grid">
+
+    <div class="schema-card">
+      <div class="schema-header">
+        <span>User</span>
+        <span class="schema-pk">primary table</span>
+      </div>
+      <div class="schema-fields">
+        <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">UUID</span></div>
+        <div class="schema-field"><span class="field-name">name</span><span class="field-type">String</span></div>
+        <div class="schema-field"><span class="field-name">api_key</span><span class="field-type">String <span class="field-flag">unique</span></span></div>
+        <div class="schema-field"><span class="field-name">timezone</span><span class="field-type">String</span></div>
+        <div class="schema-field"><span class="field-name">created_at</span><span class="field-type">DateTime</span></div>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-header">
+        <span>LogEntry</span>
+        <span class="schema-pk">core table</span>
+      </div>
+      <div class="schema-fields">
+        <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">UUID</span></div>
+        <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">UUID <span class="field-flag">fk</span></span></div>
+        <div class="schema-field"><span class="field-name">content</span><span class="field-type">String</span></div>
+        <div class="schema-field"><span class="field-name">log_date</span><span class="field-type">Date</span></div>
+        <div class="schema-field"><span class="field-name">created_at</span><span class="field-type">DateTime</span></div>
+        <div class="schema-field"><span class="field-name">is_blocker</span><span class="field-type">Boolean</span></div>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-header">
+        <span>GeneratedSummary</span>
+        <span class="schema-pk">cache table</span>
+      </div>
+      <div class="schema-fields">
+        <div class="schema-field"><span class="field-name pk">id</span><span class="field-type">UUID</span></div>
+        <div class="schema-field"><span class="field-name fk">user_id</span><span class="field-type">UUID <span class="field-flag">fk</span></span></div>
+        <div class="schema-field"><span class="field-name">summary</span><span class="field-type">Text</span></div>
+        <div class="schema-field"><span class="field-name">type</span><span class="field-type">daily | weekly</span></div>
+        <div class="schema-field"><span class="field-name">summary_date</span><span class="field-type">Date</span></div>
+        <div class="schema-field"><span class="field-name">created_at</span><span class="field-type">DateTime</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-bottom: 16px;">
+    <div class="section-label" style="margin-bottom: 8px;">Redis Key Patterns</div>
+    <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-family: var(--mono); font-size: 11px; line-height: 2.2;">
+      <div><span style="color: var(--accent2);">logs:today:{userId}</span> <span style="color: var(--dim);">→</span> <span style="color: var(--muted);">Array of today's log entries (TTL: end of day)</span></div>
+      <div><span style="color: var(--accent2);">generate:cache:{userId}:{date}</span> <span style="color: var(--dim);">→</span> <span style="color: var(--muted);">Cached AI output string (TTL: 5 minutes)</span></div>
+      <div><span style="color: var(--accent2);">ratelimit:generate:{userId}</span> <span style="color: var(--dim);">→</span> <span style="color: var(--muted);">Call counter (TTL: 1 hour, max 10 calls)</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── FLOW ───────────────────────── -->
+<section class="section" id="flow">
+  <div class="section-label">06 / request flow</div>
+  <div class="section-title">Two Core Flows</div>
+  <div class="section-desc">
+    The two most important paths in the system: logging an entry and generating a standup.
+    Both start at the CLI and terminate at a response printed to the terminal.
+  </div>
+
+  <div class="flow-container">
+    <div class="flow-title">Flow A — standup log "fixed the auth bug"</div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-box cli-step">
+          <div class="step-num">01</div>
+          <div class="step-name">CLI parses</div>
+          <div class="step-sub">Commander.js</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box cli-step">
+          <div class="step-num">02</div>
+          <div class="step-name">Read config</div>
+          <div class="step-sub">API key + port</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box api-step">
+          <div class="step-num">03</div>
+          <div class="step-name">POST /api/logs</div>
+          <div class="step-sub">x-api-key header</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box api-step">
+          <div class="step-num">04</div>
+          <div class="step-name">Auth check</div>
+          <div class="step-sub">Validate API key</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box db-step">
+          <div class="step-num">05</div>
+          <div class="step-name">Prisma insert</div>
+          <div class="step-sub">PostgreSQL</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box db-step">
+          <div class="step-num">06</div>
+          <div class="step-name">Invalidate cache</div>
+          <div class="step-sub">Redis DEL today's key</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box out-step">
+          <div class="step-num">07</div>
+          <div class="step-name">✓ Logged</div>
+          <div class="step-sub">Print to terminal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-container">
+    <div class="flow-title">Flow B — standup generate</div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-box cli-step">
+          <div class="step-num">01</div>
+          <div class="step-name">CLI parses</div>
+          <div class="step-sub">Commander.js</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box api-step">
+          <div class="step-num">02</div>
+          <div class="step-name">GET /api/generate</div>
+          <div class="step-sub">Auth + rate limit</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box db-step">
+          <div class="step-num">03</div>
+          <div class="step-name">Redis cache?</div>
+          <div class="step-sub">HIT → skip AI</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box db-step">
+          <div class="step-num">04</div>
+          <div class="step-name">Fetch logs</div>
+          <div class="step-sub">Today + yesterday</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box ai-step">
+          <div class="step-num">05</div>
+          <div class="step-name">Build prompt</div>
+          <div class="step-sub">AI Provider call</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box ai-step">
+          <div class="step-num">06</div>
+          <div class="step-name">Gemini API</div>
+          <div class="step-sub">Returns summary</div>
+        </div>
+        <div class="flow-arrow">→</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-box out-step">
+          <div class="step-num">07</div>
+          <div class="step-name">Print output</div>
+          <div class="step-sub">Formatted standup</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── AI LAYER ───────────────────────── -->
+<section class="section" id="ai">
+  <div class="section-label">07 / ai layer</div>
+  <div class="section-title">AI Provider Abstraction</div>
+  <div class="section-desc">
+    All AI logic lives in <code>src/services/ai/</code>. The interface is provider-agnostic.
+    Dev uses Gemini 2.0 Flash (free tier). Production swap to Claude Sonnet by changing one env var.
+  </div>
+
+  <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+    <div class="arch-group-label" style="margin-bottom: 14px;">Provider Interface</div>
+    <div style="font-family: var(--mono); font-size: 12px; line-height: 2; color: var(--muted);">
+      <div><span style="color: var(--accent2);">interface</span> <span style="color: var(--text);">AIProvider</span> <span style="color: var(--dim);">{</span></div>
+      <div style="padding-left: 24px;"><span style="color: var(--accent);">generateStandup</span><span style="color: var(--dim);">(logs: LogEntry[], context: StandupContext): Promise&lt;string&gt;</span></div>
+      <div style="padding-left: 24px;"><span style="color: var(--accent);">generateWeeklySummary</span><span style="color: var(--dim);">(logs: LogEntry[]): Promise&lt;string&gt;</span></div>
+      <div><span style="color: var(--dim);">}</span></div>
+      <div style="margin-top: 12px;"><span style="color: var(--accent2);">class</span> <span style="color: var(--text);">GeminiProvider</span> <span style="color: var(--accent2);">implements</span> <span style="color: var(--text);">AIProvider</span> <span style="color: var(--dim);">{ ... }</span></div>
+      <div><span style="color: var(--accent2);">class</span> <span style="color: var(--text);">ClaudeProvider</span> <span style="color: var(--accent2);">implements</span> <span style="color: var(--text);">AIProvider</span> <span style="color: var(--dim);">{ ... }</span></div>
+      <div style="margin-top: 12px; color: var(--dim);">// Resolved at startup via AI_PROVIDER env var</div>
+      <div><span style="color: var(--accent2);">const</span> <span style="color: var(--text);">provider</span> <span style="color: var(--dim);">=</span> <span style="color: var(--accent);">resolveProvider</span><span style="color: var(--dim);">(process.env.AI_PROVIDER)</span></div>
+    </div>
+  </div>
+
+  <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+    <div class="arch-group-label" style="margin-bottom: 14px;">Prompt Design — Daily Standup</div>
+    <div style="font-family: var(--mono); font-size: 11px; line-height: 1.9; color: var(--muted); white-space: pre-wrap;">You are a developer standup assistant.
+
+Given these raw log entries from a developer, generate a clean standup summary.
+
+LOGS (yesterday):
+{yesterdayLogs}
+
+LOGS (today so far):
+{todayLogs}
+
+Format the response EXACTLY like this:
+Yesterday: [summarise what was done, concise]
+Today: [infer what's next based on incomplete/ongoing items]
+Blockers: [list any items marked as stuck, or "None"]
+
+Rules:
+- Be concise. One line per section unless multiple distinct items.
+- Don't repeat the same item in Yesterday and Today.
+- Infer "Today" intelligently from unresolved items in logs.
+- Never add commentary or preamble. Return only the formatted standup.</div>
+  </div>
+</section>
+
+<!-- ───────────────────────── TECH STACK ───────────────────────── -->
+<section class="section" id="stack">
+  <div class="section-label">08 / tech stack</div>
+  <div class="section-title">Technology Choices</div>
+  <div class="section-desc">
+    Every choice made for a reason. No over-engineering. Same Fastify + PostgreSQL + Redis + Prisma 7 foundation as InfraCore.
+  </div>
+
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="stack-layer">CLI Framework</div>
+      <div class="stack-tech">Commander.js</div>
+      <div class="stack-why">The standard for Node CLI tools. Simple, minimal, great argument/flag parsing. No overhead.</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-layer">Backend</div>
+      <div class="stack-tech">Fastify + TypeScript</div>
+      <div class="stack-why">Same stack as InfraCore. You know it. Fast, typed, plugin-based. No reason to switch.</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-layer">ORM</div>
+      <div class="stack-tech">Prisma 7</div>
+      <div class="stack-why">Same as InfraCore. You've already worked through Prisma 7's quirks. Consistent across projects.</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-layer">Database</div>
+      <div class="stack-tech">PostgreSQL</div>
+      <div class="stack-why">Structured log data. Date range queries are trivial SQL. MongoDB would be wrong here.</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-layer">Cache</div>
+      <div class="stack-tech">Redis</div>
+      <div class="stack-why">Cache today's logs for fast generates. Rate limit AI calls. TTL-based expiry built in.</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-layer">AI (Dev)</div>
+      <div class="stack-tech">Gemini 2.0 Flash</div>
+      <div class="stack-why">Free tier. 250 req/day. More than enough for development. Swap to Claude for production.</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-layer">Validation</div>
+      <div class="stack-tech">Zod</div>
+      <div class="stack-why">Request body and config validation. Pairs with Fastify's schema system. Consistent with InfraCore.</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-layer">Infrastructure</div>
+      <div class="stack-tech">Docker Compose</div>
+      <div class="stack-why">PostgreSQL + Redis in containers. One command to spin up. Same pattern as InfraCore.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── FOLDER STRUCTURE ───────────────────────── -->
+<section class="section" id="folder">
+  <div class="section-label">09 / folder structure</div>
+  <div class="section-title">Project Layout</div>
+  <div class="section-desc">
+    Two packages in one repo: <code>packages/cli</code> for Commander.js and <code>packages/server</code> for Fastify.
+    Clean separation — the CLI knows nothing about databases.
+  </div>
+
+  <div class="folder-tree">
+    <div class="root">Standup-CLI/</div>
+    <div style="padding-left: 16px;">
+      <div><span class="dir">packages/</span></div>
+      <div style="padding-left: 16px;">
+        <div><span class="dir">cli/</span> <span class="comment">── Commander.js CLI</span></div>
+        <div style="padding-left: 16px;">
+          <div><span class="dir">src/</span></div>
+          <div style="padding-left: 16px;">
+            <div><span class="file">index.ts</span> <span class="comment">── entry, registers commands</span></div>
+            <div><span class="dir">commands/</span></div>
+            <div style="padding-left: 16px;">
+              <div><span class="file">log.ts</span> <span class="comment">── standup log</span></div>
+              <div><span class="file">generate.ts</span> <span class="comment">── standup generate</span></div>
+              <div><span class="file">weekly.ts</span> <span class="comment">── standup weekly</span></div>
+              <div><span class="file">history.ts</span> <span class="comment">── standup history</span></div>
+              <div><span class="file">config.ts</span> <span class="comment">── standup config</span></div>
+              <div><span class="file">init.ts</span> <span class="comment">── standup init</span></div>
+            </div>
+            <div><span class="dir">lib/</span></div>
+            <div style="padding-left: 16px;">
+              <div><span class="file">config.ts</span> <span class="comment">── read/write ~/.standup-cli/config.json</span></div>
+              <div><span class="file">client.ts</span> <span class="comment">── HTTP client (axios/fetch) to Fastify</span></div>
+              <div><span class="file">printer.ts</span> <span class="comment">── terminal output formatting</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 8px;"><span class="dir">server/</span> <span class="comment">── Fastify backend</span></div>
+        <div style="padding-left: 16px;">
+          <div><span class="dir">src/</span></div>
+          <div style="padding-left: 16px;">
+            <div><span class="file">app.ts</span> <span class="comment">── Fastify instance, plugin registration</span></div>
+            <div><span class="file">server.ts</span> <span class="comment">── entry point, listen()</span></div>
+            <div><span class="dir">modules/</span></div>
+            <div style="padding-left: 16px;">
+              <div><span class="dir">auth/</span> <span class="comment">── routes, service</span></div>
+              <div><span class="dir">logs/</span> <span class="comment">── routes, service</span></div>
+              <div><span class="dir">generate/</span> <span class="comment">── routes, service, prompt builder</span></div>
+            </div>
+            <div><span class="dir">services/</span></div>
+            <div style="padding-left: 16px;">
+              <div><span class="dir">ai/</span></div>
+              <div style="padding-left: 16px;">
+                <div><span class="file">provider.ts</span> <span class="comment">── AIProvider interface</span></div>
+                <div><span class="file">gemini.ts</span> <span class="comment">── GeminiProvider</span></div>
+                <div><span class="file">claude.ts</span> <span class="comment">── ClaudeProvider (future)</span></div>
+                <div><span class="file">index.ts</span> <span class="comment">── resolveProvider()</span></div>
+              </div>
+            </div>
+            <div><span class="dir">lib/</span></div>
+            <div style="padding-left: 16px;">
+              <div><span class="file">prisma.ts</span> <span class="comment">── Prisma client singleton</span></div>
+              <div><span class="file">redis.ts</span> <span class="comment">── Redis client singleton</span></div>
+              <div><span class="file">errors.ts</span> <span class="comment">── custom error classes</span></div>
+            </div>
+            <div><span class="dir">plugins/</span></div>
+            <div style="padding-left: 16px;">
+              <div><span class="file">auth.plugin.ts</span> <span class="comment">── API key hook on all routes</span></div>
+              <div><span class="file">rateLimit.plugin.ts</span> <span class="comment">── Redis-based rate limiting</span></div>
+            </div>
+          </div>
+          <div><span class="dir">prisma/</span></div>
+          <div style="padding-left: 16px;">
+            <div><span class="file">schema.prisma</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 8px;"><span class="file">docker-compose.yml</span> <span class="comment">── PostgreSQL + Redis</span></div>
+      <div><span class="file">.env</span></div>
+      <div><span class="file">package.json</span> <span class="comment">── workspace root</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── ENV CONFIG ───────────────────────── -->
+<section class="section" id="env">
+  <div class="section-label">10 / env config</div>
+  <div class="section-title">Environment Variables</div>
+  <div class="section-desc">
+    Server-side env vars only. The CLI reads from <code>~/.standup-cli/config.json</code>, not <code>.env</code>.
+  </div>
+
+  <table class="env-table">
+    <thead>
+      <tr>
+        <th style="width:28%">Variable</th>
+        <th style="width:28%">Example</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="env-key">DATABASE_URL</td>
+        <td class="env-example">postgresql://user:pass@localhost:5432/standup-cli</td>
+        <td class="env-desc">Prisma database connection string. Points to Docker Postgres.</td>
+      </tr>
+      <tr>
+        <td class="env-key">REDIS_URL</td>
+        <td class="env-example">redis://localhost:6379</td>
+        <td class="env-desc">Redis connection string for cache and rate limiting.</td>
+      </tr>
+      <tr>
+        <td class="env-key">PORT</td>
+        <td class="env-example">3001</td>
+        <td class="env-desc">Fastify server port. Must match CLI config port.</td>
+      </tr>
+      <tr>
+        <td class="env-key">AI_PROVIDER</td>
+        <td class="env-example">gemini</td>
+        <td class="env-desc">Which AI provider to use. Values: gemini | claude. Resolves the provider class.</td>
+      </tr>
+      <tr>
+        <td class="env-key">GEMINI_API_KEY</td>
+        <td class="env-example">AIzaSy...</td>
+        <td class="env-desc">Google AI Studio API key. Used when AI_PROVIDER=gemini.</td>
+      </tr>
+      <tr>
+        <td class="env-key">ANTHROPIC_API_KEY</td>
+        <td class="env-example">sk-ant-...</td>
+        <td class="env-desc">Anthropic API key. Used when AI_PROVIDER=claude. Leave blank in dev.</td>
+      </tr>
+      <tr>
+        <td class="env-key">NODE_ENV</td>
+        <td class="env-example">development</td>
+        <td class="env-desc">Controls logging verbosity and error detail in responses.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ───────────────────────── OBJECTIVES ───────────────────────── -->
+<section class="section" id="objectives">
+  <div class="section-label">11 / objectives</div>
+  <div class="section-title">What This Project Proves</div>
+  <div class="section-desc">
+    Each objective maps to a concrete skill signal that matters in interviews and portfolio reviews.
+  </div>
+
+  <div class="objectives-grid">
+    <div class="obj-card">
+      <div class="obj-title">
+        <span class="obj-dot" style="background: var(--accent);"></span>
+        CLI Development
+      </div>
+      <ul class="obj-list">
+        <li>Build and publish a globally installable npm CLI package</li>
+        <li>Commander.js command/flag/argument parsing</li>
+        <li>Local config file management (~/.appname pattern)</li>
+        <li>Terminal output formatting and UX design</li>
+      </ul>
+    </div>
+    <div class="obj-card">
+      <div class="obj-title">
+        <span class="obj-dot" style="background: var(--accent2);"></span>
+        Backend Architecture
+      </div>
+      <ul class="obj-list">
+        <li>Fastify plugin-based modular architecture</li>
+        <li>API key authentication via request hooks</li>
+        <li>Redis caching strategy with TTL and invalidation</li>
+        <li>Rate limiting on expensive AI endpoints</li>
+      </ul>
+    </div>
+    <div class="obj-card">
+      <div class="obj-title">
+        <span class="obj-dot" style="background: var(--accent4);"></span>
+        AI Integration
+      </div>
+      <ul class="obj-list">
+        <li>Provider-agnostic AI abstraction layer</li>
+        <li>Prompt engineering for structured output</li>
+        <li>Graceful fallback when AI call fails</li>
+        <li>Gemini API integration (free tier dev)</li>
+      </ul>
+    </div>
+    <div class="obj-card">
+      <div class="obj-title">
+        <span class="obj-dot" style="background: var(--accent3);"></span>
+        Engineering Craft
+      </div>
+      <ul class="obj-list">
+        <li>Monorepo structure with two linked packages</li>
+        <li>TypeScript strict mode across CLI and server</li>
+        <li>Docker Compose for local infrastructure</li>
+        <li>Something you genuinely use every day</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── BUILD PHASES ───────────────────────── -->
+<section class="section" id="phases">
+  <div class="section-label">12 / build phases</div>
+  <div class="section-title">4-Week Build Plan</div>
+  <div class="section-desc">
+    Scope is tight enough to finish in 3–4 weeks. Each phase ships something that works end-to-end.
+    Don't start Phase 2 until Phase 1 works completely.
+  </div>
+
+  <div class="timeline">
+    <div class="timeline-phase">
+      <div class="phase-num">01</div>
+      <div class="phase-label">Foundation</div>
+      <ul class="phase-items">
+        <li>Monorepo setup</li>
+        <li>Docker Compose</li>
+        <li>Fastify server + Prisma</li>
+        <li>DB migrations</li>
+        <li>Redis connection</li>
+        <li>Auth plugin</li>
+      </ul>
+    </div>
+    <div class="timeline-phase">
+      <div class="phase-num">02</div>
+      <div class="phase-label">Core Loop</div>
+      <ul class="phase-items">
+        <li>Logs module (CRUD)</li>
+        <li>Redis cache layer</li>
+        <li>Commander CLI setup</li>
+        <li>standup log command</li>
+        <li>standup history</li>
+        <li>Local config system</li>
+      </ul>
+    </div>
+    <div class="timeline-phase">
+      <div class="phase-num">03</div>
+      <div class="phase-label">AI + Generate</div>
+      <ul class="phase-items">
+        <li>AIProvider interface</li>
+        <li>GeminiProvider impl</li>
+        <li>Prompt engineering</li>
+        <li>Generate module</li>
+        <li>standup generate</li>
+        <li>standup weekly</li>
+      </ul>
+    </div>
+    <div class="timeline-phase">
+      <div class="phase-num">04</div>
+      <div class="phase-label">Polish + Ship</div>
+      <ul class="phase-items">
+        <li>standup init wizard</li>
+        <li>Error handling polish</li>
+        <li>Terminal output UX</li>
+        <li>README + demo GIF</li>
+        <li>npm publish</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div><!-- end main -->
+
+<script>
+function scrollTo(id) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
