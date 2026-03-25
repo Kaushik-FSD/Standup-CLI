@@ -1,8 +1,17 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../../lib/prisma.js";
+import { redis } from "../../lib/redis.js";
+
+const getCacheKey = (userId: string) => `logs:${userId}:today`;
+
+const getTTLUntilEndOfDay = (): number => {
+  const now = new Date();
+  const endOfDay = new Date();
+  endOfDay.setUTCHours(23, 59, 59, 999);
+  return Math.floor((endOfDay.getTime() - now.getTime()) / 1000);
+};
 
 export async function logsRoutes(app: FastifyInstance) {
-  // POST /api/logs — create a log entry
   app.post("/api/logs", async (request, reply) => {
     const { content, isBlocker } = request.body as {
       content: string;
@@ -22,11 +31,22 @@ export async function logsRoutes(app: FastifyInstance) {
       },
     });
 
+    // Invalidate cache
+    await redis.del(getCacheKey(request.userId));
+
     return reply.status(201).send(log);
   });
 
-  // GET /api/logs — get today's logs
   app.get("/api/logs", async (request, reply) => {
+    const cacheKey = getCacheKey(request.userId);
+
+    // Cache check
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      request.log.info("[Logs] Cache hit");
+      return reply.send(JSON.parse(cached));
+    }
+
     //etches only today's logs, not all logs ever. So we filter by a date range.
     //startOfDay = 2026-03-25 00:00:00.000
     //endOfDay = 2026-03-25 23:59:59.999
@@ -44,10 +64,18 @@ export async function logsRoutes(app: FastifyInstance) {
       orderBy: { createdAt: "asc" },
     });
 
+    // Cache until end of UTC day
+    await redis.set(
+      cacheKey,
+      JSON.stringify(logs),
+      "EX",
+      getTTLUntilEndOfDay(),
+    );
+    request.log.info("[Logs] Cache miss — logs cached");
+
     return reply.send(logs);
   });
 
-  // DELETE /api/logs/:id
   app.delete("/api/logs/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
 
@@ -58,10 +86,13 @@ export async function logsRoutes(app: FastifyInstance) {
     }
 
     if (log.userId !== request.userId) {
-      return reply.status(403).send({ error: "Forbidden User" });
+      return reply.status(403).send({ error: "Forbidden" });
     }
 
     await prisma.logEntry.delete({ where: { id } });
+
+    // Invalidate cache
+    await redis.del(getCacheKey(request.userId));
 
     return reply.status(204).send();
   });
