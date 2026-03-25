@@ -5,11 +5,12 @@ import { redis } from "../lib/redis.js";
 
 const CACHE_TTL_SECONDS = 300; // 5 minutes
 const CACHE_PREFIX = "apikey:";
+const PUBLIC_ROUTES = ["/health", "/api/auth/init"];
 
 const authPlugin: FastifyPluginAsync = async (app) => {
   app.addHook("onRequest", async (request, reply) => {
     // Skip auth for health check
-    if (request.url === "/health") return;
+    if (PUBLIC_ROUTES.includes(request.url)) return;
 
     const apiKey = request.headers["x-api-key"];
 
