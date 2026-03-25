@@ -5,7 +5,7 @@ import { redis } from "../lib/redis.js";
 
 const CACHE_TTL_SECONDS = 300; // 5 minutes
 const CACHE_PREFIX = "apikey:";
-const PUBLIC_ROUTES = ["/health", "/api/auth/init"];
+const PUBLIC_ROUTES = ["/health", "/api/auth/init"]; //used to exclude api's that dont need api key validation
 
 const authPlugin: FastifyPluginAsync = async (app) => {
   app.addHook("onRequest", async (request, reply) => {
@@ -36,6 +36,7 @@ const authPlugin: FastifyPluginAsync = async (app) => {
       return reply.status(401).send({ error: "Invalid API key" });
     }
 
+    //attach user id in request
     request.userId = user.id;
 
     // Cache for next time
