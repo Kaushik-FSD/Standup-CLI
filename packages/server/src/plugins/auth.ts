@@ -22,6 +22,7 @@ const authPlugin: FastifyPluginAsync = async (app) => {
     const cached = await redis.get(`${CACHE_PREFIX}${apiKey}`);
     if (cached) {
       request.log.info("[Auth] Cache hit");
+      request.userId = cached;
       return;
     }
 
@@ -34,6 +35,8 @@ const authPlugin: FastifyPluginAsync = async (app) => {
     if (!user) {
       return reply.status(401).send({ error: "Invalid API key" });
     }
+
+    request.userId = user.id;
 
     // Cache for next time
     await redis.set(
