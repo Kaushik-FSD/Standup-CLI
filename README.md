@@ -15,7 +15,7 @@
 
 StandupBot is a monorepo CLI tool that replaces the mental overhead of writing daily standups. Instead of trying to remember what you did at the end of the day, you log work as you go — and when standup time arrives, the AI generates a clean, professional summary from your logs.
 
-It ships as two packages: a **Fastify backend** that handles persistence, auth, caching, and AI generation, and a **CLI** that talks to the server over HTTP so you can run `standup log "fixed the auth bug"` from anywhere in your terminal.
+It ships as two packages: a **Fastify backend** that handles persistence, auth, caching, and AI generation, and a **CLI** that talks to the server over HTTP so you can run `standup log "fixed the auth bug"` from anywhere in your system terminal.
 
 ---
 
